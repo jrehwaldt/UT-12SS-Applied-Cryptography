@@ -3,8 +3,11 @@ package hw1;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.security.Security;
 
 import javax.crypto.SecretKey;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /*
  * Homework #1 tasks -- read this comment carefully.
@@ -59,21 +62,31 @@ public class Main {
 	//
 	// Assume that our application has no special security requirements.
 
-	// FIXME (1p) Choose the best key length for DSA, shortly explain your choice.
-	private static int dsaKeySize = -1;
+	// FIXMEdone (1p) Choose the best key length for DSA, shortly explain your choice.
+	//
+	// 1024 is the highest possible supported.
+	// NIST recommends lengths of 2048 or 3072 for security lifetime after 2010 or 2030.
+	//
+	private static int dsaKeySize = 1024;
 
-	// FIXME (2p) Choose the best key length for RSA, shortly explain your choice.
-	private static int rsaKeySize = -1;
+	// FIXMEdone (2p) Choose the best key length for RSA, shortly explain your choice.
+	//
+	// Asymmetric key length 2048 is considered as being secure until around 2030.
+	// Due to no special security requirements this is totally sufficient
+	// for the given tasks.
+	//
+	private static int rsaKeySize = 2048;
 
 	// Hint: see http://www.keylength.com/en/compare/ for ideas, use Google.
 
 
 
 	public static void main(String[] args) throws IOException {
-		// FIXME (1p)
+		// FIXMEdone (1p)
 		// Import BouncyCastle provider -- you will need it to run some hashing algorithms.
 		// See http://www.bouncycastle.org/wiki/display/JA1/Provider+Installation for details.
-
+		Security.addProvider(new BouncyCastleProvider());
+		
 		// For testing, file path will be provided as argument.
 		// File itself will be rather small -- less than a megabyte.
 		// No need to change anything here.
@@ -131,9 +144,9 @@ public class Main {
 		System.out.println("\n> Testing public key encryption...");
 
 		KeyPair rsaKeyPair = MyKeyGenerator.generateRsaKeyPair(rsaKeySize);
-		// FIXME Replace `null`-s with proper keys from rsaKeyPair
-		byte[] rsaCiphertext = MyEncryptor.rsaEncrypt(data, null);
-		plaintext = MyEncryptor.rsaDecrypt(rsaCiphertext, null);
+		// FIXMEdone Replace `null`-s with proper keys from rsaKeyPair
+		byte[] rsaCiphertext = MyEncryptor.rsaEncrypt(data, rsaKeyPair.getPublic());
+		plaintext = MyEncryptor.rsaDecrypt(rsaCiphertext, rsaKeyPair.getPrivate());
 		System.out.println("Decrypted text: " + new String(plaintext));
 	}
 
@@ -146,15 +159,15 @@ public class Main {
 		System.out.println("\n> Testing public key signatures...");
 
 		KeyPair dsaKeyPair = MyKeyGenerator.generateDsaKeyPair(dsaKeySize);
-		// FIXME Replace `null`-s with proper keys from dsaKeyPair
-		byte[] dsaSig = MySigner.dsaSign(data, null);
-		boolean dsaVerificationResult = MySigner.dsaVerify(data, dsaSig, null);
+		// FIXMEdone Replace `null`-s with proper keys from dsaKeyPair
+		byte[] dsaSig = MySigner.dsaSign(data, dsaKeyPair.getPrivate());
+		boolean dsaVerificationResult = MySigner.dsaVerify(data, dsaSig, dsaKeyPair.getPublic());
 		System.out.println("DSA signature verified: " + dsaVerificationResult);
 
 		KeyPair rsaKeyPair = MyKeyGenerator.generateRsaKeyPair(rsaKeySize);
-		// FIXME Replace `null`-s with proper keys from rsaKeyPair
-		byte[] rsaSig = MySigner.rsaSign(data, null);
-		boolean rsaVerificationResult = MySigner.rsaVerify(data, rsaSig, null);
-		System.out.println("DSA siverified: " + rsaVerificationResult);
+		// FIXMEdone Replace `null`-s with proper keys from rsaKeyPair
+		byte[] rsaSig = MySigner.rsaSign(data, rsaKeyPair.getPrivate());
+		boolean rsaVerificationResult = MySigner.rsaVerify(data, rsaSig, rsaKeyPair.getPublic());
+		System.out.println("RSA signature verified: " + rsaVerificationResult);
 	}
 }
