@@ -3,6 +3,7 @@
 
 2) Convert to pem
    openssl x509 -inform der -in cert.cer -out cert.pem
+   Hint: http://www.sslshopper.com/article-most-common-openssl-commands.html
 
 3) Download roots package from http://www.verisign.com/support/roots.html
    and extract "VeriSign Universal Root Certification Authority.pem" as root.pem
@@ -16,4 +17,5 @@
    openssl x509 -in intermediate1.der -inform der -out intermediate1.pem -outform pem
    openssl x509 -in intermediate2.der -inform der -out intermediate2.pem -outform pem
    
-6) 
+6) Extract intermediate2.cer from cert.cer as the downloaded one does not match -.-
+   Transform it to *.pem as explained above

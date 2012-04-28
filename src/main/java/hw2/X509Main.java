@@ -3,10 +3,13 @@ package hw2;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
+import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /*
  * Here is homework 2.
@@ -65,7 +68,11 @@ public class X509Main {
 
 	public static void main(String[] args) throws Exception {
 		// Add security providers here, if needed.
-
+		Security.addProvider(new BouncyCastleProvider());
+		
+		// Force line ending to be the same as used in provided CERT_FILE
+		System.setProperty("line.separator", "\n");
+		
 		//
 		// Modify nothing below.
 		//
@@ -121,6 +128,8 @@ public class X509Main {
 			// Hint: you can change those in Java.
 			//
 			// Special note to Windows users: make sure your code will pass the test on Linux too!
+			
+			// line ending enforced in line 74 of X509Main.java
 		}
 	}
 
