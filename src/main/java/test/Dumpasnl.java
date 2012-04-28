@@ -1,23 +1,24 @@
-package ee.ut.appcrypto;
+package test;
+
 
 import java.io.FileInputStream;
 
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.util.ASN1Dump;
 
-public class DumpASN1 {
+public class Dumpasnl {
 
   public static void main(String[] args) throws Exception {
     FileInputStream in = new FileInputStream(args[0] + "priv.pem");
-    ASN1Primitive der = new ASN1InputStream(in).readObject();
+    ASN1Encodable der = new ASN1InputStream(in).readObject();
     System.out.println("PEM: " + ASN1Dump.dumpAsString(der));
 //    PEM: Unknown d 2d2d2d424547494e205253412050524956415445204b45592d2d2d2d2d0a4d4949457041494241414b43415145
 
-    in = new FileInputStream(args[0] + "priv.Der");
+    in = new FileInputStream(args[0] + "priv.der");
     der = new ASN1InputStream(in).readObject();
-    System.out.println("DER: " + ASN1Dump.dumpAsString(der));
-//    PER: DER Sequence
+    System.out.println("PER: " + ASN1Dump.dumpAsString(der));
+//    DER: DER Sequence
 //    Integer(0)
 //    Integer(24967864669034856740294328353564664978535409550378246223599208786901771720859763742103892903306673800081769253816230567791012155347232532901517172076701922840732780455221981700904114520428875237934392791429917800346853295474274622817778942432958526828504146822885966560405567888742491747030060517291243907726964849157712973565054366561285069732329712437274018240241411953573086051399823362085960100590143272253323230274417418231212536697778050272513069835851359874812197239189280899882629544968759032705353767673465412079957848776921015079931562295031549327890340858461488688493804230155670775753663900012729477532637)
 //    Integer(65537)
@@ -36,20 +37,20 @@ public class DumpASN1 {
 //        Integer(0)
 //        DER Sequence
 //            ObjectIdentifier(1.2.840.113549.1.1.1)
-                // --> http://www.alvestrand.no/objectid/1.2.840.113549.1.1.1.html
-                //   = RSA encryption
+				// --> http://www.alvestrand.no/objectid/1.2.840.113549.1.1.1.html
+				//   = RSA encryption
 //            NULL
 //        DER Octet String[1192] 
     
     
     in = new FileInputStream(args[0] + "priv.crypt.pk8");
     der = new ASN1InputStream(in).readObject();
-    System.out.println("PK8 (password): " + ASN1Dump.dumpAsString(der));
+    System.out.println("PK8: " + ASN1Dump.dumpAsString(der));
 //    PK8: DER Sequence
 //        DER Sequence
 //            ObjectIdentifier(1.2.840.113549.1.5.3)
-                // --> http://www.alvestrand.no/objectid/1.2.840.113549.1.5.3.html
-                //   = pbeWithMD5AndDES-CBC
+    			// --> http://www.alvestrand.no/objectid/1.2.840.113549.1.5.3.html
+    			//   = pbeWithMD5AndDES-CBC
 //            DER Sequence
 //                DER Octet String[8] 
 //                Integer(2048)
