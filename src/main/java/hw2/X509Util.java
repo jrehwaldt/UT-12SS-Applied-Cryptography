@@ -421,6 +421,7 @@ public final  class X509Util {
 		
 		try {
 			PKIXCertPathBuilderResult result = (PKIXCertPathBuilderResult) builder.build(pkixParams);
+			System.out.println("Certificate path length: " + result.getCertPath().getCertificates().size());
 		} catch (Exception e) {
 			throw new CertificateException(e);
 		}
