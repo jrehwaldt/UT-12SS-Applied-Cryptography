@@ -4,3 +4,9 @@
 /target
 /.settings
 /src/main/resources/.rnd
+/src/main/resources/hw2/DigiCert
+/src/main/resources/hw2/Twitter
+/src/main/resources/hw2/VeriSign
+/src/main/resources/hw2/my.crl
+/src/main/resources/hw2/mycert.der
+/src/main/resources/hw2/mycert.pem
