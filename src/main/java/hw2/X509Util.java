@@ -55,6 +55,7 @@ import org.bouncycastle.x509.extension.X509ExtensionUtil;
  * 
  * You are *not* allowed to change method signatures.
  */
+@SuppressWarnings("deprecation")
 public final  class X509Util {
 	/**
 	 * Extracts first CRL distribution URL from this X.509 certificate.
@@ -457,6 +458,7 @@ public final  class X509Util {
 
 
 	// Jan: there's a helper method already in X509ExtensionUtils or so...
+	@SuppressWarnings("unused")
 	private static ASN1Encodable toAsn1Object(byte[] encoded)
 			throws IOException {
 		return new ASN1InputStream(encoded).readObject(); 
