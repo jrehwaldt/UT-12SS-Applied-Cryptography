@@ -1,4 +1,4 @@
-package ee.ut.appcrypto.lecture4;
+package lab04;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class ReadCertificate {
 		
 		System.out.println(cert);
 		
-		// Encoding:           Base 64 or DER-binäry
+		// Encoding:           Base 64 or DER-binï¿½ry
 		// Distinguished Name: LDAP (Active Directory) format, RFC 4514
 		// What is signed?:    the public key
 		

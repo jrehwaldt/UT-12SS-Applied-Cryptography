@@ -1,4 +1,4 @@
-package ee.ut.appcrypto.lecture4;
+package lab04;
 
 import java.io.FileInputStream;
 import java.io.IOException;

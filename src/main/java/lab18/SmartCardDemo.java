@@ -1,8 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<!DOCTYPE HTML>><HTML><HEAD>
-<META content="text/html; charset=windows-1252" 
-http-equiv="Content-Type"></HEAD>
-<BODY><PRE>package lab18;
+package lab18;
 
 import java.io.ByteArrayInputStream;
 
@@ -23,6 +19,7 @@ import common.Util;
  * All APDU commands are implemented based on this manual:
  * http://www.cardwerk.com/smartcards/smartcard_standard_ISO7816-4_6_basic_interindustry_commands.aspx
  */
+@SuppressWarnings("restriction")
 public class SmartCardDemo {
 	public static void main(String[] args) throws CardException {
 		Card card = SmartCardUtil.connectCard();
@@ -110,7 +107,7 @@ public class SmartCardDemo {
 		 *         template ::= SEQUENCE 1..N {
 		 *             entryTag ::= INTEGER { 0x4F | 0x50 | 0x73 | 0x87 | 0x9D },
 		 *             entryLength ::= INTEGER { 1..0xFF },
-		 *             entryValue ::= OCTET STRING -- &lt;-- we need this with entryTag=0x4F
+		 *             entryValue ::= OCTET STRING -- <-- we need this with entryTag=0x4F
 		 *         }
 		 *     }
 		 * }
@@ -120,10 +117,10 @@ public class SmartCardDemo {
 
 		byte[] applicationId = null;
 		in = new ByteArrayInputStream(response, 4, response[3]); // ##0..2 skipped -- see above
-		while (in.available() &gt; 0) {
+		while (in.available() > 0) {
 			int entryTag = in.read(); // First entry byte should be entry tag
 			if (entryTag == 0x9F) { // .. 9F means that tag is actually two-bytes long
-				entryTag = (entryTag &lt;&lt; 8) + in.read();
+				entryTag = (entryTag << 8) + in.read();
 			}
 			int entryLength = in.read(); // Next byte should be entry length
 
@@ -154,10 +151,10 @@ public class SmartCardDemo {
 
 		String cardHolderNameStr = null;
 		in = new ByteArrayInputStream(response, 2, response[1]); // #0 -- tag -- is skipped
-		while (in.available() &gt; 0) {
+		while (in.available() > 0) {
 			int entryTag = in.read(); // First entry byte should be entry tag
 			if (entryTag == 0x5F || entryTag == 0x9F) { // .. 5F means that tag is actually two-bytes long
-				entryTag = (entryTag &lt;&lt; 8) + in.read();
+				entryTag = (entryTag << 8) + in.read();
 			}
 			int entryLength = in.read(); // Next byte should be entry length
 
@@ -218,10 +215,9 @@ public class SmartCardDemo {
 		 * CLA=0x00 INS=0xA4 P1=0x02 P2=0x0C
 		 *
 		 * Command to read record:
-		 * CLA=0x00 INS=0xB2 P1=&lt;record-number&gt; P2=0x04
+		 * CLA=0x00 INS=0xB2 P1=<record-number> P2=0x04
 		 * 
 		 * TODO: Print (some) personal data and PIN counter values.
 		 */
 	}
 }
-</PRE></BODY></HTML>

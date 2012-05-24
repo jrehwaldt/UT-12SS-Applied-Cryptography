@@ -1,8 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<!DOCTYPE HTML>><HTML><HEAD>
-<META content="text/html; charset=windows-1252" 
-http-equiv="Content-Type"></HEAD>
-<BODY><PRE>package lab21;
+package lab21;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -89,4 +85,3 @@ public class SslClient {
 		return (SSLSocket) socketFactory.createSocket(host, port);
 	}
 }
-</PRE></BODY></HTML>

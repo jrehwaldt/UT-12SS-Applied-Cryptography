@@ -1,4 +1,4 @@
-package ee.ut.appcrypto;
+package lab05;
 
 import java.io.FileInputStream;
 import java.io.InputStream;

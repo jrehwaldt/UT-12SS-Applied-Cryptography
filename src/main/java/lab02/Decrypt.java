@@ -1,4 +1,4 @@
-package ee.ut.appcrypto.lecture2;
+package lab02;
 
 public class Decrypt {
     

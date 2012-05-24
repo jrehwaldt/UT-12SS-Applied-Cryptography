@@ -1,4 +1,4 @@
-package ee.ut.appcrypto.lecture1;
+package lab01;
 
 import java.math.BigInteger;
 

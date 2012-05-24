@@ -1,8 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<!DOCTYPE HTML>><HTML><HEAD>
-<META content="text/html; charset=windows-1252" 
-http-equiv="Content-Type"></HEAD>
-<BODY><PRE>package lab21;
+package lab21;
 
 /*
  * Task 0.
@@ -100,4 +96,3 @@ class MyHandshakeCompletedListener implements HandshakeCompletedListener {
 		System.out.println(" * SSL handshake completed successfully");
 	}
 }
-</PRE></BODY></HTML>
