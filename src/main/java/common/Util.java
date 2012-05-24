@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -55,5 +57,12 @@ public final class Util {
 		}
 
 		return "00000000000000000000000000000000".getBytes();
+	}
+
+	public static KeyPair generateRsaKeyPair(int keySize) throws NoSuchAlgorithmException {
+		KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+		keyPairGenerator.initialize(keySize);
+
+		return keyPairGenerator.generateKeyPair();
 	}
 }
