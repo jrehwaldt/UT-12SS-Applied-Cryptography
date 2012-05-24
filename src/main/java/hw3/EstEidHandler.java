@@ -43,6 +43,7 @@ import javax.smartcardio.CommandAPDU;
  * eid.setPin1("12345".getBytes()); // Needed mostly for signing operations
  * </pre>
  */
+@SuppressWarnings("restriction")
 public class EstEidHandler {
 	private static byte[] personalDirId = new byte[] { (byte) 0xEE, (byte) 0xEE };
 	private static byte[] personalDataFileId = new byte[] { (byte) 0x50, (byte) 0x44 };

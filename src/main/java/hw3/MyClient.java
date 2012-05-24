@@ -12,15 +12,30 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.Security;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.cms.ContentInfo;
+import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSSignedDataGenerator;
+import org.bouncycastle.cms.CMSTypedData;
+import org.bouncycastle.cms.SignerInfoGenerator;
+import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
+import org.bouncycastle.util.Store;
+
+import common.Util;
 
 /*
  * You are allowed to use BouncyCastle provider and PKIX libraries for this task.
@@ -128,9 +143,43 @@ public class MyClient {
 		//   - Check lab 15 code for some examples
 		//   - Use your implemented MyEstEidSigner class as signature provider (signer)
 		//   - Use org.bouncycastle.cert.X509CertificateHolder class to store encoded certificates
-
-		return null;
-
+		
+		MyEstEidSigner contentSigner = new MyEstEidSigner();
+		X509Certificate certificate = contentSigner.getCertificate();
+		
+		// create generator
+		CMSSignedDataGenerator generator = new CMSSignedDataGenerator();
+		
+		// add signer info
+		DigestCalculatorProvider digestProvider = new JcaDigestCalculatorProviderBuilder().build();
+		
+		SignerInfoGenerator signerInfoGenerator =
+				new JcaSignerInfoGeneratorBuilder(digestProvider).build(contentSigner, certificate);
+		generator.addSignerInfoGenerator(signerInfoGenerator);
+		
+		// add certificate
+		Store certs = new JcaCertStore(Arrays.asList(certificate));
+		generator.addCertificates(certs);
+		
+		// add data; generate ContentInfo
+		CMSTypedData typedData = new CMSProcessableByteArray(data);
+		ContentInfo contentInfo = generator.generate(typedData).toASN1Structure();
+		
+		// FIXME comment out
+		ASN1Encodable content = (ASN1Encodable) contentInfo.getContent();
+		System.out.println("Content: " + Util.toAsn1String(content.toASN1Primitive().getEncoded()));
+		
+		if (content instanceof DEROctetString) {
+			DEROctetString octet = (DEROctetString) content;
+			System.out.println("Octet String: " + Util.toHexString(octet.getOctets()) + "\n");
+		}
+		// FIXME end comment out
+		
+		// 1.2.840.113549.1.7.1
+		// 1.3.14.3.2.26
+		
+		return contentInfo;
+		
 		/*
 		 * You can debug the resulting ASN.1 structure by writing it DER-encoded to a file
 		 * and then inspecting the file contents with `dumpasn1` utility.

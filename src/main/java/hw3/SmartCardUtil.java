@@ -14,6 +14,7 @@ import javax.smartcardio.TerminalFactory;
  * You do not have to change anything here.
  */
 
+@SuppressWarnings("restriction")
 public final class SmartCardUtil {
 	/**
 	 * Establishes the connection with the Smart Card (if present)

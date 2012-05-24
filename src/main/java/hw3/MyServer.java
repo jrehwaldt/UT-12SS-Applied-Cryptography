@@ -2,20 +2,36 @@ package hw3;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.Security;
+import java.security.cert.CertPath;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertPathParameters;
+import java.security.cert.CertPathValidator;
+import java.security.cert.CertPathValidatorException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.PKIXParameters;
 import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Set;
+import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
+import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /*
@@ -221,18 +237,24 @@ public class MyServer {
 	 * (1p)
 	 */
 	private static SSLServerSocket startServer() throws IOException {
-		// TODO: implement
+		// TODOdone: implement
 		//
 		// Hints:
 		//   - See lab 20 code for examples
 		System.out.println(" * Starting server..."); // Do not touch
 
-		int port = 0; // FIXME
-		SSLServerSocket serverSocket = null; // FIXME
+		int port = Integer.valueOf(System.getProperty("my.server.port")); // FIXMEdone
+		SSLServerSocket serverSocket = createServerSocket(port); // FIXMEdone
 
 		System.out.println(" * Done, listening on port " + port + "..."); // Do not touch
 
 		return serverSocket;
+	}
+	
+	private static SSLServerSocket createServerSocket(int port) throws IOException {
+		SSLServerSocketFactory socketFactory =
+				(SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+		return (SSLServerSocket) socketFactory.createServerSocket(port);
 	}
 
 	/**
@@ -243,7 +265,7 @@ public class MyServer {
 	 * (4p)
 	 */
 	private static SignedData toSignedData(byte[] contentInfoBytes) throws IOException {
-		// TODO: implement
+		// TODOdone: implement
 		//
 		// Hints:
 		//   - Re-create ContentInfo structure - you may want to use ASN1InputStream
@@ -253,7 +275,13 @@ public class MyServer {
 		/*
 		 * Note that client is sending SignedData within ContentInfo structure. 
 		 */
-		return null; // FIXME
+		ASN1InputStream in = new ASN1InputStream(contentInfoBytes);
+		ASN1Encodable asn = in.readObject();
+		ContentInfo contentInfo = ContentInfo.getInstance(asn);
+		ASN1Encodable content = contentInfo.getContent();
+		
+		SignedData signedData = SignedData.getInstance(content);
+		return signedData; // FIXMEdone
 	}
 
 	/**
@@ -266,6 +294,14 @@ public class MyServer {
 	 */
 	private static byte[] getData(SignedData signedData) {
 		// TODO: implement
+		
+		ContentInfo contentInfo = signedData.getEncapContentInfo();
+		ASN1Encodable asn1 = contentInfo.getContent();
+		
+		if (asn1 == null) {
+			return null;
+		}
+		
 		return null; // FIXME
 	}
 
@@ -280,9 +316,23 @@ public class MyServer {
 	 */
 	private static X509Certificate getCertificate(SignedData signedData)
 			throws CertificateException, IOException {
-		// TODO: implement 
+		// TODOdone: implement 
 		// Throw an exception if 0 or 2+ certificates found.
-		return null; // FIXME
+		
+		ASN1Set certificates = signedData.getCertificates();
+		
+		if (certificates.size() != 1) {
+			throw new IllegalStateException("Unexpected number of certificates received");
+		}
+		
+		ASN1Encodable asn1Certificate = certificates.getObjectAt(0);
+		Certificate certificate = Certificate.getInstance(asn1Certificate);
+		
+		InputStream in = new ByteArrayInputStream(certificate.getEncoded());
+		CertificateFactory factory = CertificateFactory.getInstance("X509");
+		X509Certificate cert = (X509Certificate) factory.generateCertificate(in);
+		
+		return cert; // FIXMEdone
 	}
 
 	/**
@@ -297,7 +347,23 @@ public class MyServer {
 		// Hint:
 		//   - You may want to use CertPathValidator class here
 		// Build certificate path
-		return false; // FIXME
+		CertPathValidator validator = CertPathValidator.getInstance(
+				CertPathValidator.getDefaultType());
+		
+		CertPathParameters params = new PKIXParameters(keystore);
+		CertPath path = CertPathBuilder.getInstance("X509").build(params).getCertPath();
+//		String alias = keystore.getCertificateAlias(certificate);
+//		Certificate[] chain = keystore.getCertificateChain(alias);
+//		@SuppressWarnings("restriction")
+//		CertPath path = new X509CertPath(Arrays.asList(chain));
+		
+		try {
+			validator.validate(path, params);
+		} catch (CertPathValidatorException e) {
+			return false;
+		}
+		
+		return true; // FIXMEdone
 	}
 
 	/**
