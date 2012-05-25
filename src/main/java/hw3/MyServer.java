@@ -3,15 +3,20 @@ package hw3;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.Security;
 import java.security.Signature;
 import java.security.cert.CertPath;
@@ -32,6 +37,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -39,9 +45,16 @@ import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
+import org.bouncycastle.asn1.pkcs.EncryptedPrivateKeyInfo;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMReader;
+
+import common.Util;
 
 /*
  * To run this server, you will need a self-signed certificate.
@@ -203,11 +216,33 @@ public class MyServer {
 		 * by OpenSSL -- PEM-encoded. If you store them in any other format, your code will
 		 * most likely fail the tests.
 		 */
-
-		// TODO: Read server certificate from file set in 'my.server.certificate' property.
-
+		
+		// TODOdone: Read server certificate from file set in 'my.server.certificate' property.
+		FileInputStream in = new FileInputStream(System.getProperty("my.server.certificate"));
+		CertificateFactory factory = CertificateFactory.getInstance("X509");
+		X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
+		in.close();
+		
 		// TODO: Read private key from file set in 'my.server.key' property (1p)
-
+		
+		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("my.server.key"))); 
+		Security.addProvider(new BouncyCastleProvider()); 
+		KeyPair keyPair = (KeyPair) new PEMReader(br).readObject(); 
+		PrivateKey privateKey = keyPair.getPrivate();
+		BCRSAPrivateCrtKey bcPrivateKey = (BCRSAPrivateCrtKey) privateKey;
+		
+//		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+//		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
+//		encodedKey = Arrays.copyOfRange(encodedKey, 28, encodedKey.length - 27);
+//		byte[] encoded = Base64.decode(encodedKey);
+//		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+//		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+		
+//		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+//		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
+//		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encodedKey);
+//		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+		
 		// TODO: Create a new Java keystore
 		//   - import server certificate
 		//   - import private key
@@ -222,6 +257,51 @@ public class MyServer {
 		//
 		// Hints:
 		//   - Check out http://docs.oracle.com/javase/6/docs/api/java/security/KeyStore.html
+		
+		KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
+		
+		File storeFile = new File(System.getProperty("javax.net.ssl.keyStore"));
+		if (!storeFile.exists()) {
+			// create store if required
+			store.load(null);
+		} else {
+			// loads keystore; otherwise
+			in = new FileInputStream(storeFile);
+			
+			store.load(in, System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+			in.close();
+		}
+		
+		// remove old certificate if already existent
+		String alias = "server";
+		if (store.containsAlias("server")) {
+			store.deleteEntry("server");
+		}
+		
+		// import server certificate and private key
+		store.setCertificateEntry(alias, certificate);
+		
+		System.out.println(bcPrivateKey.getFormat());
+//		System.out.println(new javax.crypto.EncryptedPrivateKeyInfo(privateKey.getEncoded()).getAlgName());
+		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
+//				AlgorithmIdentifier.getInstance("1.2.840.113549.1.8"),
+//				AlgorithmIdentifier.getInstance("RSA"),
+				AlgorithmIdentifier.getInstance(NISTObjectIdentifiers.dsa_with_sha224),
+				privateKey.getEncoded());
+		System.out.println(encryptedInfo.getEncryptionAlgorithm().getAlgorithm().getId());
+		
+//		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
+//				privateKey.getEncoded());
+		store.setKeyEntry(
+				alias,
+				encryptedInfo.getEncoded(ASN1Encoding.DER),
+//				privateKey.getEncoded(),
+				new X509Certificate[] { certificate });
+		
+		// store keystore
+		FileOutputStream out = new FileOutputStream(System.getProperty("javax.net.ssl.keyStore"));
+		store.store(out, System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+		out.close();
 	}
 
 	/**
@@ -471,8 +551,6 @@ public class MyServer {
 				signerInfo.getDigestAlgorithm().getAlgorithm().getId());
 		byte[] signedAttributesDigest = md.digest(signedAttributes);
 		signature.update(signedAttributesDigest);
-		
-		System.out.println("Content: " + Util.toAsn1String(signerInfo.getAuthenticatedAttributes().getEncoded()));
 		
 		// verify
 		boolean verified = signature.verify(digest);

@@ -127,7 +127,7 @@ public class MyClient {
 	 */
 	private static ContentInfo createSignedData(byte[] data)
 			throws CMSException, GeneralSecurityException, IOException, OperatorCreationException  {
-		// TODO: implement
+		// TODOdone: implement
 		//
 		// Resulting SignedData must contain:
 		//   - Initial data
@@ -162,16 +162,6 @@ public class MyClient {
 		// add data; generate ContentInfo
 		CMSTypedData typedData = new CMSProcessableByteArray(data);
 		ContentInfo contentInfo = generator.generate(typedData, true).toASN1Structure();
-		
-//		// FIXME comment out
-//		ASN1Encodable content = (ASN1Encodable) contentInfo.getContent();
-//		System.out.println("Content: " + Util.toAsn1String(content.toASN1Primitive().getEncoded()));
-//		
-//		if (content instanceof ASN1OctetString) {
-//			ASN1OctetString octet = (ASN1OctetString) content;
-//			System.out.println("Octet String: " + Util.toHexString(octet.getOctets()) + "\n");
-//		}
-//		// FIXME end comment out
 		
 		return contentInfo;
 		

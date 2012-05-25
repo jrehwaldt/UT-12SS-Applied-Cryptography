@@ -74,7 +74,7 @@ public class MyCertificateImporter {
 		
 		// download certificates
 		for (X509Certificate certificate: certificates) {
-			store.setCertificateEntry(certificate.toString(), certificate);
+			store.setCertificateEntry(certificate.getSerialNumber().toString(), certificate);
 		}
 		
 		// store keystore

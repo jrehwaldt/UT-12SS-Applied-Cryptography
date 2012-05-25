@@ -11,17 +11,29 @@ package lab21;
  */
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 
 import javax.net.ssl.HandshakeCompletedEvent;
 import javax.net.ssl.HandshakeCompletedListener;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 
 public class SslServer {
+	private static String userHome = System.getProperty("user.home")
+		+ System.getProperty("file.separator");
+	
+	private static String serverKeystorePath =  userHome + "server.jks";
+	private static char[] serverKeystorePassword = "password".toCharArray();
+
 	public static void main(String[] args) throws Exception {
 		System.out.println(" * Starting server...");
 		SSLServerSocket serverSocket = createServerSocket(ServerConf.SSL_SERVER_PORT);
@@ -79,7 +91,21 @@ public class SslServer {
 	 */
 	private static SSLServerSocket createServerSocket(int port)
 			throws GeneralSecurityException, IOException {
-		return null; // FIXME
+		
+		// Load server certificate from keystore
+		KeyStore trustStore = KeyStore.getInstance("JKS");
+		trustStore.load(new FileInputStream(serverKeystorePath), serverKeystorePassword);
+		
+		// Initialize trust manager factory -- this will handle trusted certificates
+		TrustManagerFactory tmFactory = TrustManagerFactory.getInstance("SunX509");
+		tmFactory.init(trustStore);
+		
+		// Initialize SSL context and create socket factory
+		SSLContext sslContext = SSLContext.getInstance("TLS");
+		sslContext.init(null, tmFactory.getTrustManagers(), null);
+		SSLServerSocketFactory socketFactory = sslContext.getServerSocketFactory();
+		
+		return (SSLServerSocket) socketFactory.createServerSocket(port);
 	}
 }
 
