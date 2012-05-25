@@ -3,6 +3,7 @@ package hw3;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,13 +14,16 @@ import java.security.KeyStore;
 import java.security.Security;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathParameters;
 import java.security.cert.CertPathValidator;
 import java.security.cert.CertPathValidatorException;
+import java.security.cert.CertStore;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.PKIXParameters;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -27,11 +31,11 @@ import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /*
@@ -227,8 +231,13 @@ public class MyServer {
 	 * (1p)
 	 */
 	private static KeyStore getAppKeystore() throws GeneralSecurityException, IOException {
-		// TODO: Read SK certificates from file set in 'my.sk.keyStore' property (1p)
-		return null; // FIXME
+		// TODOdone: Read SK certificates from file set in 'my.sk.keyStore' property (1p)
+		FileInputStream in = new FileInputStream(System.getProperty("my.sk.keyStore"));
+		KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
+		
+		store.load(in, System.getProperty("my.sk.keyStorePassword").toCharArray());
+		in.close();
+		return store; // FIXMEdone
 	}
 
 	/**
@@ -293,7 +302,7 @@ public class MyServer {
 	 * (1p)
 	 */
 	private static byte[] getData(SignedData signedData) {
-		// TODO: implement
+		// TODOdone: implement
 		
 		ContentInfo contentInfo = signedData.getEncapContentInfo();
 		ASN1Encodable asn1 = contentInfo.getContent();
@@ -302,7 +311,8 @@ public class MyServer {
 			return null;
 		}
 		
-		return null; // FIXME
+		ASN1OctetString octet = (ASN1OctetString) asn1;
+		return octet.getOctets(); // FIXMEdone
 	}
 
 	/**
@@ -342,20 +352,28 @@ public class MyServer {
 	 */
 	private static boolean verifyCertificate(X509Certificate certificate, KeyStore keystore)
 			throws GeneralSecurityException {
-		// TODO: implement
+		// TODOdone: implement
 		//
 		// Hint:
 		//   - You may want to use CertPathValidator class here
 		// Build certificate path
 		CertPathValidator validator = CertPathValidator.getInstance(
-				CertPathValidator.getDefaultType());
+				CertPathValidator.getDefaultType(), "BC");
 		
-		CertPathParameters params = new PKIXParameters(keystore);
-		CertPath path = CertPathBuilder.getInstance("X509").build(params).getCertPath();
-//		String alias = keystore.getCertificateAlias(certificate);
-//		Certificate[] chain = keystore.getCertificateChain(alias);
-//		@SuppressWarnings("restriction")
-//		CertPath path = new X509CertPath(Arrays.asList(chain));
+		X509CertSelector selector = new X509CertSelector();
+		selector.setCertificate(certificate);
+		
+		CertStore intermediateCertStore = CertStore.getInstance(
+				"Collection",
+				new CollectionCertStoreParameters(Arrays.asList(certificate)),
+				"BC");
+		
+		PKIXBuilderParameters params = new PKIXBuilderParameters(keystore, selector);
+		params.addCertStore(intermediateCertStore);
+		params.setRevocationEnabled(false);
+		
+		CertPath path = CertPathBuilder.getInstance(
+				CertPathBuilder.getDefaultType(), "BC").build(params).getCertPath();
 		
 		try {
 			validator.validate(path, params);

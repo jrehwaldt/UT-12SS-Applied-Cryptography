@@ -120,7 +120,6 @@ public class MyEstEidSigner implements ContentSigner {
 			
 			@SuppressWarnings("unchecked")
 			Enumeration<DLSequence> en = asn1Set.getObjects();
-			MessageImprint imprint = null;
 			while (en.hasMoreElements()) {
 				DLSequence sequence = en.nextElement();
 				
@@ -145,7 +144,7 @@ public class MyEstEidSigner implements ContentSigner {
 				DEROctetString der = (DEROctetString) asn1DataSet.getObjectAt(0);
 				
 				AlgorithmIdentifier id = AlgorithmIdentifier.getInstance(oid);
-				imprint = new MessageImprint(id, eid.signData(der.getOctets()));
+				MessageImprint imprint = new MessageImprint(id, eid.signData(der.getOctets()));
 				
 				return imprint.getEncoded(); // FIXME
 			}

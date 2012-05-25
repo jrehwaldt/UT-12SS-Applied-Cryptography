@@ -20,8 +20,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.cms.ContentInfo;
+import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
@@ -163,14 +166,14 @@ public class MyClient {
 		
 		// add data; generate ContentInfo
 		CMSTypedData typedData = new CMSProcessableByteArray(data);
-		ContentInfo contentInfo = generator.generate(typedData).toASN1Structure();
+		ContentInfo contentInfo = generator.generate(typedData, true).toASN1Structure();
 		
 		// FIXME comment out
 		ASN1Encodable content = (ASN1Encodable) contentInfo.getContent();
 		System.out.println("Content: " + Util.toAsn1String(content.toASN1Primitive().getEncoded()));
 		
-		if (content instanceof DEROctetString) {
-			DEROctetString octet = (DEROctetString) content;
+		if (content instanceof ASN1OctetString) {
+			ASN1OctetString octet = (ASN1OctetString) content;
 			System.out.println("Octet String: " + Util.toHexString(octet.getOctets()) + "\n");
 		}
 		// FIXME end comment out
