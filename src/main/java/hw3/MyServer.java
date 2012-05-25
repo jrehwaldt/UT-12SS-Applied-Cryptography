@@ -11,7 +11,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.Security;
+import java.security.Signature;
 import java.security.cert.CertPath;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertPathValidator;
@@ -31,10 +33,13 @@ import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Set;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
+import org.bouncycastle.asn1.cms.SignerInfo;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -395,7 +400,7 @@ public class MyServer {
 	private static boolean verifySignature(SignedData signedData, X509Certificate certificate)
 			throws GeneralSecurityException, IOException {
 		// TODO: implement
-
+		
 		/*
 		 * SignedData, as follows from the name, contains data signature,
 		 * but extracting and especially verifying that is not as simple as it may feel.
@@ -427,6 +432,50 @@ public class MyServer {
 		 * verify signature using public key from the certificate, not the certificate itself --
 		 * in this case, certificate extension validation will be skipped.
 		 */
-		return false; // FIXME
+		
+		// extract signature
+		ASN1Set signerInfos = signedData.getSignerInfos();
+		if (signerInfos.size() != 1) {
+			throw new IllegalStateException("We expect exactly one SignerInfo for this task");
+		}
+		
+		SignerInfo signerInfo = SignerInfo.getInstance(signerInfos.getObjectAt(0));
+		byte[] digest = signerInfo.getEncryptedDigest().getOctets();
+		byte[] data = getData(signedData);
+		byte[] signedAttributes = signerInfo.getAuthenticatedAttributes().getEncoded();
+		
+		ASN1ObjectIdentifier sha1Branch = new ASN1ObjectIdentifier("1.3.14.3.2");
+		if (!signerInfo.getDigestAlgorithm().getAlgorithm().on(sha1Branch)) {
+			throw new IllegalStateException("Unsupported hashing algorithm used");
+		}
+		
+		String algorithm = OIWObjectIdentifiers.sha1WithRSA.getId();
+		
+//		AlgorithmIdentifier id = signerInfo.getDigestAlgorithm();
+//		AlgorithmIdentifier id2 = signerInfo.getDigestEncryptionAlgorithm();
+//		ASN1Set digestAlgorithms = signedData.getDigestAlgorithms();
+		// id1:              1.3.14.3.2.26
+		// id2:              1.2.840.113549.1.1.1
+		// digestAlgorithms: [1.3.14.3.2.26]
+		// required:         1.3.14.3.2.29
+		
+		// initialize signature
+		Signature signature = Signature.getInstance(algorithm);
+		signature.initVerify(certificate.getPublicKey());
+		
+		// add data
+		signature.update(data);
+		
+		// add signed attributes
+		MessageDigest md = MessageDigest.getInstance(
+				signerInfo.getDigestAlgorithm().getAlgorithm().getId());
+		byte[] signedAttributesDigest = md.digest(signedAttributes);
+		signature.update(signedAttributesDigest);
+		
+		System.out.println("Content: " + Util.toAsn1String(signerInfo.getAuthenticatedAttributes().getEncoded()));
+		
+		// verify
+		boolean verified = signature.verify(digest);
+		return verified; // FIXME
 	}
 }
