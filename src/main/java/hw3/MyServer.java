@@ -6,16 +6,16 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
+import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Security;
 import java.security.Signature;
@@ -30,29 +30,30 @@ import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Enumeration;
 
+import javax.crypto.Cipher;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Set;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
-import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
-import org.bouncycastle.asn1.pkcs.EncryptedPrivateKeyInfo;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPrivateCrtKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Base64;
 
 import common.Util;
 
@@ -225,18 +226,18 @@ public class MyServer {
 		
 		// TODO: Read private key from file set in 'my.server.key' property (1p)
 		
-		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("my.server.key"))); 
-		Security.addProvider(new BouncyCastleProvider()); 
-		KeyPair keyPair = (KeyPair) new PEMReader(br).readObject(); 
-		PrivateKey privateKey = keyPair.getPrivate();
-		BCRSAPrivateCrtKey bcPrivateKey = (BCRSAPrivateCrtKey) privateKey;
+//		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("my.server.key"))); 
+//		KeyPair keyPair = (KeyPair) new PEMReader(br).readObject();
+//		PrivateKey privateKey = keyPair.getPrivate();
+//		BCRSAPrivateCrtKey bcPrivateKey = (BCRSAPrivateCrtKey) privateKey;
 		
-//		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-//		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
+		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
 //		encodedKey = Arrays.copyOfRange(encodedKey, 28, encodedKey.length - 27);
-//		byte[] encoded = Base64.decode(encodedKey);
-//		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-//		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
+		encodedKey = Arrays.copyOfRange(encodedKey, 32, encodedKey.length - 31);
+		byte[] encoded = Base64.decode(encodedKey);
+		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
 		
 //		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 //		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
@@ -281,22 +282,23 @@ public class MyServer {
 		// import server certificate and private key
 		store.setCertificateEntry(alias, certificate);
 		
-		System.out.println(bcPrivateKey.getFormat());
+//		System.out.println(bcPrivateKey.getFormat());
 //		System.out.println(new javax.crypto.EncryptedPrivateKeyInfo(privateKey.getEncoded()).getAlgName());
-		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
-//				AlgorithmIdentifier.getInstance("1.2.840.113549.1.8"),
-//				AlgorithmIdentifier.getInstance("RSA"),
-				AlgorithmIdentifier.getInstance(NISTObjectIdentifiers.dsa_with_sha224),
-				privateKey.getEncoded());
-		System.out.println(encryptedInfo.getEncryptionAlgorithm().getAlgorithm().getId());
+//		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
+////				AlgorithmIdentifier.getInstance("1.2.840.113549.1.8"),
+////				AlgorithmIdentifier.getInstance("RSA"),
+//				AlgorithmIdentifier.getInstance(NISTObjectIdentifiers.dsa_with_sha224),
+//				privateKey.getEncoded());
+//		System.out.println(encryptedInfo.getEncryptionAlgorithm().getAlgorithm().getId());
 		
+		// TODO comment in again
 //		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
 //				privateKey.getEncoded());
-		store.setKeyEntry(
-				alias,
-				encryptedInfo.getEncoded(ASN1Encoding.DER),
-//				privateKey.getEncoded(),
-				new X509Certificate[] { certificate });
+//		store.setKeyEntry(
+//				alias,
+//				encryptedInfo.getEncoded(),
+////				privateKey.getEncoded(),
+//				new X509Certificate[] { certificate });
 		
 		// store keystore
 		FileOutputStream out = new FileOutputStream(System.getProperty("javax.net.ssl.keyStore"));
@@ -520,7 +522,7 @@ public class MyServer {
 		}
 		
 		SignerInfo signerInfo = SignerInfo.getInstance(signerInfos.getObjectAt(0));
-		byte[] digest = signerInfo.getEncryptedDigest().getOctets();
+		byte[] verifyDigest = signerInfo.getEncryptedDigest().getOctets();
 		byte[] data = getData(signedData);
 		byte[] signedAttributes = signerInfo.getAuthenticatedAttributes().getEncoded();
 		
@@ -539,21 +541,115 @@ public class MyServer {
 		// digestAlgorithms: [1.3.14.3.2.26]
 		// required:         1.3.14.3.2.29
 		
+		// verify data-only message digest, if signed attributes available
+		byte[] verifyDataDigest = getMessageDigest(signerInfo);
+		if (verifyDataDigest != null) {
+			byte[] dataDigest = computeDigest(signerInfo, data);
+			
+			if (!Arrays.equals(dataDigest, verifyDataDigest)) {
+				return false;
+			}
+		}
+		
+		// verify content-type of Signed Data
+		ASN1ObjectIdentifier verifyContentType = getContentType(signerInfo);
+		if (verifyContentType != null) {
+			ASN1ObjectIdentifier contentType = signedData.getEncapContentInfo().getContentType();
+			
+			if (!contentType.equals(verifyContentType)) {
+				return false;
+			}
+		}
+		
+		// compute digest of signed attributes
+		byte[] signedAttributesDigest = computeDigest(signerInfo, signedAttributes);
+		
 		// initialize signature
 		Signature signature = Signature.getInstance(algorithm);
 		signature.initVerify(certificate.getPublicKey());
 		
 		// add data
 		signature.update(data);
-		
-		// add signed attributes
-		MessageDigest md = MessageDigest.getInstance(
-				signerInfo.getDigestAlgorithm().getAlgorithm().getId());
-		byte[] signedAttributesDigest = md.digest(signedAttributes);
 		signature.update(signedAttributesDigest);
 		
 		// verify
-		boolean verified = signature.verify(digest);
+		boolean verified = signature.verify(verifyDigest);
+		
+		// TODO try two ways of signature checking
+		byte[] test = computeDigest(signerInfo, data, signedAttributesDigest);
+		signature.update(test);
+		boolean verified2 = signature.verify(verifyDigest);
+		
+		if (verified || verified2) {
+			System.out.println("YEAAAAAAAAHHHHHHHHHHHHHH!!!");
+		}
+		
 		return verified; // FIXME
+	}
+	
+	private static byte[] computeDigest(SignerInfo signerInfo, byte[]... data) throws NoSuchAlgorithmException {
+		
+		MessageDigest digest = MessageDigest.getInstance(
+				signerInfo.getDigestAlgorithm().getAlgorithm().getId());
+		
+		for (byte[] d: data) {
+			digest.update(d);
+		}
+		return digest.digest();
+	}
+	
+	private static final ASN1ObjectIdentifier OID_MESSAGE_DIGEST = new ASN1ObjectIdentifier("1.2.840.113549.1.9.4");
+	private static final ASN1ObjectIdentifier OID_CONTENT_TYPE = new ASN1ObjectIdentifier("1.2.840.113549.1.9.3");
+	
+	private static byte[] getMessageDigest(SignerInfo signerInfo) {
+		
+		@SuppressWarnings("unchecked")
+		Enumeration<DERSequence> attributes = signerInfo.getAuthenticatedAttributes().getObjects();
+		while (attributes.hasMoreElements()) {
+			DERSequence sequence = attributes.nextElement();
+			
+			if (sequence.size() != 2) {
+				throw new IllegalStateException("Attribute malformed");
+			}
+			
+			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
+			
+			if (!OID_MESSAGE_DIGEST.equals(oid)) {
+				continue;
+			}
+			
+			DERSet messageDigestSequence = (DERSet) sequence.getObjectAt(1);
+			DEROctetString messageDigest = (DEROctetString) messageDigestSequence.getObjectAt(0);
+			
+			return messageDigest.getOctets();
+		}
+		
+		throw null;
+	}
+	
+	private static ASN1ObjectIdentifier getContentType(SignerInfo signerInfo) {
+		
+		@SuppressWarnings("unchecked")
+		Enumeration<DERSequence> attributes = signerInfo.getAuthenticatedAttributes().getObjects();
+		while (attributes.hasMoreElements()) {
+			DERSequence sequence = attributes.nextElement();
+			
+			if (sequence.size() != 2) {
+				throw new IllegalStateException("Attribute malformed");
+			}
+			
+			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
+			
+			if (!OID_CONTENT_TYPE.equals(oid)) {
+				continue;
+			}
+			
+			DERSet oidSeq = (DERSet) sequence.getObjectAt(1);
+			ASN1ObjectIdentifier contentType = (ASN1ObjectIdentifier) oidSeq.getObjectAt(0);
+			
+			return contentType;
+		}
+		
+		throw null;
 	}
 }
