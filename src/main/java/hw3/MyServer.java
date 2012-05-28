@@ -587,32 +587,17 @@ public class MyServer {
 	
 	private static byte[] getMessageDigest(SignerInfo signerInfo) {
 		
-		@SuppressWarnings("unchecked")
-		Enumeration<DERSequence> attributes = signerInfo.getAuthenticatedAttributes().getObjects();
-		while (attributes.hasMoreElements()) {
-			DERSequence sequence = attributes.nextElement();
-			
-			if (sequence.size() != 2) {
-				throw new IllegalStateException("Attribute malformed");
-			}
-			
-			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
-			
-			if (!PKCSObjectIdentifiers.pkcs_9_at_messageDigest.equals(oid)) {
-				continue;
-			}
-			
-			DERSet messageDigestSequence = (DERSet) sequence.getObjectAt(1);
-			DEROctetString messageDigest = (DEROctetString) messageDigestSequence.getObjectAt(0);
-			
-			return messageDigest.getOctets();
-		}
-		
-		throw null;
+		DEROctetString attribute = getAttribute(PKCSObjectIdentifiers.pkcs_9_at_contentType, signerInfo);
+		return attribute != null ? attribute.getOctets() : null;
 	}
 	
 	private static ASN1ObjectIdentifier getContentType(SignerInfo signerInfo) {
 		
+		return getAttribute(PKCSObjectIdentifiers.pkcs_9_at_contentType, signerInfo);
+	}
+	
+	private static <T extends ASN1Encodable> T getAttribute(ASN1ObjectIdentifier key, SignerInfo signerInfo) {
+		
 		@SuppressWarnings("unchecked")
 		Enumeration<DERSequence> attributes = signerInfo.getAuthenticatedAttributes().getObjects();
 		while (attributes.hasMoreElements()) {
@@ -624,16 +609,17 @@ public class MyServer {
 			
 			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
 			
-			if (!PKCSObjectIdentifiers.pkcs_9_at_contentType.equals(oid)) {
+			if (!key.equals(oid)) {
 				continue;
 			}
 			
-			DERSet oidSeq = (DERSet) sequence.getObjectAt(1);
-			ASN1ObjectIdentifier contentType = (ASN1ObjectIdentifier) oidSeq.getObjectAt(0);
+			DERSet messageDigestSequence = (DERSet) sequence.getObjectAt(1);
+			@SuppressWarnings("unchecked")
+			T attribute = (T) messageDigestSequence.getObjectAt(0);
 			
-			return contentType;
+			return attribute;
 		}
 		
-		throw null;
+		return null;
 	}
 }
