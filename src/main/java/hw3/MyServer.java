@@ -627,6 +627,7 @@ public class MyServer {
 		
 		// YYY
 		boolean verified7 = false;
+//		see http://stackoverflow.com/questions/8243566/verifying-detached-signature-with-bc
 //		try {
 //			verified7 = true;
 //			InputStream is = new ByteArrayInputStream(data);
