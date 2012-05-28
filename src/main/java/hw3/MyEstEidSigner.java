@@ -143,10 +143,8 @@ public class MyEstEidSigner implements ContentSigner {
 				DLSet asn1DataSet = (DLSet) asn1Data;
 				DEROctetString der = (DEROctetString) asn1DataSet.getObjectAt(0);
 				
-				// algorithm is SHA1withRSA as per javadoc of
-				// EstEidHandler#signData(byte[])
 				MessageImprint imprint = new MessageImprint(
-						new AlgorithmIdentifier(OIWObjectIdentifiers.sha1WithRSA),
+						getAlgorithmIdentifier(),
 						eid.signData(der.getOctets()));
 				
 				return imprint.getEncoded(); // FIXMEdone
