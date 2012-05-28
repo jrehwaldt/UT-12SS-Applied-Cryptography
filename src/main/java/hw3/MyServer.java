@@ -34,12 +34,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Enumeration;
 
-import javax.crypto.Cipher;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
-import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -51,17 +49,9 @@ import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
-import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.cms.SignerInformation;
-import org.bouncycastle.cms.SignerInformationStore;
-import org.bouncycastle.cms.SignerInformationVerifier;
-import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.util.encoders.Base64;
 
 import common.Util;
@@ -387,17 +377,13 @@ public class MyServer {
 		ASN1Encodable content = contentInfo.getContent();
 		
 		SignedData signedData = SignedData.getInstance(content);
-		
-		// TODO remove
-		verifyByBCMeans(signedData, contentInfoBytes);
-		
 		return signedData; // FIXMEdone
 	}
 
 	/**
 	 * Extracts actual raw data that the client sent to signing procedure.
 	 * 
-	 * This data (if provided), can be found in EncapsulatedContentInfo strucutre
+	 * This data (if provided), can be found in EncapsulatedContentInfo structure
 	 * inside this SignedData. 
 	 * 
 	 * (1p)
@@ -495,7 +481,7 @@ public class MyServer {
 	 */
 	private static boolean verifySignature(SignedData signedData, X509Certificate certificate)
 			throws GeneralSecurityException, IOException {
-		// TODO: implement
+		// TODOdone: implement
 		
 		/*
 		 * SignedData, as follows from the name, contains data signature,
@@ -538,10 +524,6 @@ public class MyServer {
 		SignerInfo signerInfo = SignerInfo.getInstance(signerInfos.getObjectAt(0));
 		byte[] verifyDigest = signerInfo.getEncryptedDigest().getOctets();
 		byte[] data = getData(signedData);
-		byte[] signedAttributes = signerInfo.getAuthenticatedAttributes().getEncoded();
-		
-//		String signatureAlgorithm = OIWObjectIdentifiers.sha1WithRSA.getId();
-		String signatureAlgorithm = signerInfo.getDigestEncryptionAlgorithm().getAlgorithm().getId();
 		
 //		AlgorithmIdentifier id = signerInfo.getDigestAlgorithm();
 //		AlgorithmIdentifier id2 = signerInfo.getDigestEncryptionAlgorithm();
@@ -581,165 +563,10 @@ public class MyServer {
 		
 		// verify
 		boolean verified = signature.verify(imprint.getHashedMessage());
-		
-		tmpOtherTries(signerInfo, signedAttributes, data, certificate, verifyDigest, signatureAlgorithm);
-		
-		return verified; // FIXME
+		return verified; // FIXMEdone
 	}
 	
 	
-	
-	private static void tmpOtherTries(
-			SignerInfo signerInfo,
-			byte[] signedAttributes,
-			byte[] data,
-			X509Certificate certificate,
-			byte[] verifyDigest,
-			String signatureAlgorithm)
-	throws GeneralSecurityException, IOException {
-		
-		// TODO remove
-		// compute digest of signed attributes
-		byte[] signedAttributesDigest = computeDigest(signerInfo, signedAttributes);
-		
-		// initialize signature
-		Signature signature = Signature.getInstance(OIWObjectIdentifiers.sha1WithRSA.getId(), "BC");
-		signature.initVerify(certificate.getPublicKey());
-		
-		// add data
-		signature.update(data);
-		signature.update(signedAttributesDigest);
-		
-		// verify
-		boolean verified = signature.verify(verifyDigest);
-		
-		// TODO try two ways of signature checking
-		byte[] fullDigest = computeDigest(signerInfo, data, signedAttributesDigest);
-		signature.update(fullDigest);
-		boolean verified2 = signature.verify(verifyDigest);
-		
-		fullDigest = computeDigest(signerInfo, data, signedAttributes);
-		signature.update(fullDigest);
-		boolean verified3 = signature.verify(verifyDigest);
-		
-		signature.update(data);
-		signature.update(signedAttributes);
-		boolean verified4 = signature.verify(verifyDigest);
-		
-		// 
-		// Fix for "Illegal key size or default parameters"
-		// @see http://stackoverflow.com/questions/6481627/java-security-illegal-key-size-or-default-parameters
-		// 
-		Cipher cipher = Cipher.getInstance(signatureAlgorithm, "BC");
-		cipher.init(Cipher.ENCRYPT_MODE, certificate.getPublicKey());
-		cipher.update(fullDigest);
-		byte[] encryptedFullDigest = cipher.doFinal();
-		System.out.println(encryptedFullDigest.length);
-		
-		boolean verified5 = Arrays.equals(verifyDigest, encryptedFullDigest);
-		
-		// XXX
-		System.out.println(signerInfo.getEncryptedDigest().getEncoded().length);
-		System.out.println(signerInfo.getEncryptedDigest().getOctets().length);
-		
-		char[] encode = Hex.encodeHex(signerInfo.getEncryptedDigest().getOctets());
-		String hexVerifyDigest = new String(encode);
-		System.out.println(hexVerifyDigest);
-		System.out.println(hexVerifyDigest.length());
-		// XXX
-		
-		// YYY
-		boolean verified7 = false;
-//		see http://stackoverflow.com/questions/8243566/verifying-detached-signature-with-bc
-//		try {
-//			verified7 = true;
-//			InputStream is = new ByteArrayInputStream(data);
-//			DigestCalculatorProvider digestProvider = new JcaDigestCalculatorProviderBuilder().build();
-//			CMSSignedDataParser parser = new CMSSignedDataParser(digestProvider, signedData.getEncoded());
-//			CMSTypedStream signedContent = parser.getSignedContent();
-//			signedContent.drain();
-//			
-//			Store certStore = parser.getCertificates();
-//			SignerInformationStore signers = parser.getSignerInfos();
-//			
-//			Collection c = signers.getSigners(); 
-//			Iterator it = c.iterator();
-//			while(it.hasNext()) {
-//				SignerInformation signer = (SignerInformation)it.next();  
-//				Collection certCollection = certStore.getMatches(signer.getSID());
-//				
-//				Iterator certIt = certCollection.iterator();
-//				X509CertificateHolder certHolder = (X509CertificateHolder)certIt.next();
-//				
-//				SignerInformationVerifier verifier = new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(certHolder);
-//				if (!signer.verify(verifier)) {
-//					verified7 = false;
-//				} else {
-//					System.out.println("verify success" );
-//				}
-//			}
-//			
-//		} catch (CMSException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (OperatorCreationException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		try {
-//			JcaSimpleSignerInfoVerifierBuilder signerInfoVerifierBuilder = new JcaSimpleSignerInfoVerifierBuilder();
-//			signerInfoVerifierBuilder.setProvider("BC");
-//			SignerInformationVerifier signerInformationVerifier = signerInfoVerifierBuilder.build(certificate);
-//			ContentVerifier contentVerifier = signerInformationVerifier.getContentVerifier(signerInfo.getDigestEncryptionAlgorithm(), signerInfo.getDigestAlgorithm());
-////			verified7 = contentVerifier.verify(verifyDigest);
-//			
-//			
-//			DigestCalculator calc = signerInformationVerifier.getDigestCalculator(signerInfo.getDigestAlgorithm());
-//			OutputStream digOut = calc.getOutputStream();
-//			digOut.write(data);
-//			digOut.close();
-//			
-//			byte[] resultDigest = calc.getDigest();
-//			
-//			if (contentVerifier instanceof RawContentVerifier) {
-//				RawContentVerifier rawVerifier = (RawContentVerifier) contentVerifier;
-//
-////				String encName = CMSSignedHelper.INSTANCE.getEncryptionAlgName(signerInfo.getDigestEncryptionAlgorithm());
-////				if (encName.equals("RSA")) {
-//					DigestInfo digInfo = new DigestInfo(signerInfo.getDigestAlgorithm(), resultDigest);
-//					
-//					verified7 = rawVerifier.verify(digInfo.getEncoded(ASN1Encoding.DER), resultDigest);
-////				}
-//				verified7 = rawVerifier.verify(verifyDataDigest, resultDigest);
-//				
-//				CMSSignedData xxx = new CMSSignedData(signedData.getEncoded());
-//				SignerInformationStore store = xxx.getSignerInfos();
-////				new CMSProcessableByteArray(null, signer.getSignature())
-//				Collection signers = store.getSigners();
-//				System.out.println(signers.size());
-//			}
-//			
-//		} catch (OperatorCreationException e) {
-//			e.printStackTrace();
-//		} catch (CMSException e) {
-//			e.printStackTrace();
-//		}
-//		
-//		// YYY
-		
-		cipher = Cipher.getInstance(signatureAlgorithm, "BC");
-		cipher.init(Cipher.DECRYPT_MODE, certificate.getPublicKey());
-//		cipher.update(verifyDigest);
-//		byte[] decryptedVerifyDigest = cipher.doFinal();
-//		
-//		boolean verified6 = Arrays.equals(decryptedVerifyDigest, fullDigest);
-		boolean verified6 = false;
-		
-		if (verified || verified2 || verified3 || verified4 || verified5 || verified6 || verified7) {
-			System.out.println("YEAAAAAAAAHHHHHHHHHHHHHH!!!");
-		}
-		
-	}
 
 	private static byte[] computeDigest(SignerInfo signerInfo, byte[]... data) throws NoSuchAlgorithmException {
 		
@@ -805,31 +632,5 @@ public class MyServer {
 		}
 		
 		throw null;
-	}
-	
-	private static void verifyByBCMeans(SignedData signedData,
-			byte[] contentInfoBytes)
-	throws IOException {
-		// TODO remove whole method
-		try {
-			CMSSignedData xxx = new CMSSignedData(contentInfoBytes);
-			SignerInformationStore store = xxx.getSignerInfos();
-			SignerInformation info = (SignerInformation) store.getSigners().iterator().next();
-			
-			JcaSimpleSignerInfoVerifierBuilder signerInfoVerifierBuilder = new JcaSimpleSignerInfoVerifierBuilder();
-			signerInfoVerifierBuilder.setProvider("BC");
-			SignerInformationVerifier verifier = signerInfoVerifierBuilder.build(getCertificate(signedData).getPublicKey());
-			
-			System.out.println(info.verify(verifier));
-		} catch (CMSException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (OperatorCreationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (CertificateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 }
