@@ -32,7 +32,6 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Enumeration;
 
 import javax.crypto.Cipher;
@@ -42,7 +41,6 @@ import javax.net.ssl.SSLSocket;
 
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -54,8 +52,8 @@ import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
+import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.Certificate;
-import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.SignerInformation;
@@ -63,10 +61,7 @@ import org.bouncycastle.cms.SignerInformationStore;
 import org.bouncycastle.cms.SignerInformationVerifier;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentVerifier;
-import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.RawContentVerifier;
 import org.bouncycastle.util.encoders.Base64;
 
 import common.Util;
@@ -576,6 +571,34 @@ public class MyServer {
 			}
 		}
 		
+		MessageImprint imprint = MessageImprint.getInstance(verifyDigest);
+		
+		Signature signature = Signature.getInstance(imprint.getHashAlgorithm().getAlgorithm().getId(), "BC");
+		signature.initVerify(certificate.getPublicKey());
+		
+		// add data
+		signature.update(verifyDataDigest);
+		
+		// verify
+		boolean verified = signature.verify(imprint.getHashedMessage());
+		
+		tmpOtherTries(signerInfo, signedAttributes, data, certificate, verifyDigest, signatureAlgorithm);
+		
+		return verified; // FIXME
+	}
+	
+	
+	
+	private static void tmpOtherTries(
+			SignerInfo signerInfo,
+			byte[] signedAttributes,
+			byte[] data,
+			X509Certificate certificate,
+			byte[] verifyDigest,
+			String signatureAlgorithm)
+	throws GeneralSecurityException, IOException {
+		
+		// TODO remove
 		// compute digest of signed attributes
 		byte[] signedAttributesDigest = computeDigest(signerInfo, signedAttributes);
 		
@@ -704,7 +727,6 @@ public class MyServer {
 //		
 //		// YYY
 		
-		
 		cipher = Cipher.getInstance(signatureAlgorithm, "BC");
 		cipher.init(Cipher.DECRYPT_MODE, certificate.getPublicKey());
 //		cipher.update(verifyDigest);
@@ -717,9 +739,8 @@ public class MyServer {
 			System.out.println("YEAAAAAAAAHHHHHHHHHHHHHH!!!");
 		}
 		
-		return verified; // FIXME
 	}
-	
+
 	private static byte[] computeDigest(SignerInfo signerInfo, byte[]... data) throws NoSuchAlgorithmException {
 		
 		MessageDigest digest = MessageDigest.getInstance(

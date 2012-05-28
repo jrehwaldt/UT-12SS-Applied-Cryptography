@@ -13,6 +13,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DLSequence;
 import org.bouncycastle.asn1.DLSet;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.operator.ContentSigner;
@@ -135,18 +136,20 @@ public class MyEstEidSigner implements ContentSigner {
 				}
 				
 				ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) asn1Oid;
-				
-				if (!"1.2.840.113549.1.9.4".equals(oid.getId())) {
+				if (!PKCSObjectIdentifiers.pkcs_9_at_messageDigest.equals(oid)) {
 					continue;
 				}
 				
 				DLSet asn1DataSet = (DLSet) asn1Data;
 				DEROctetString der = (DEROctetString) asn1DataSet.getObjectAt(0);
 				
-				AlgorithmIdentifier id = AlgorithmIdentifier.getInstance(oid);
-				MessageImprint imprint = new MessageImprint(id, eid.signData(der.getOctets()));
+				// algorithm is SHA1withRSA as per javadoc of
+				// EstEidHandler#signData(byte[])
+				MessageImprint imprint = new MessageImprint(
+						new AlgorithmIdentifier(OIWObjectIdentifiers.sha1WithRSA),
+						eid.signData(der.getOctets()));
 				
-				return imprint.getEncoded(); // FIXME
+				return imprint.getEncoded(); // FIXMEdone
 			}
 			
 			return null;
