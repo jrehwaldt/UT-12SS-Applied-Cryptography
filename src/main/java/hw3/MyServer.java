@@ -587,7 +587,7 @@ public class MyServer {
 	
 	private static byte[] getMessageDigest(SignerInfo signerInfo) {
 		
-		DEROctetString attribute = getAttribute(PKCSObjectIdentifiers.pkcs_9_at_contentType, signerInfo);
+		DEROctetString attribute = getAttribute(PKCSObjectIdentifiers.pkcs_9_at_messageDigest, signerInfo);
 		return attribute != null ? attribute.getOctets() : null;
 	}
 	
