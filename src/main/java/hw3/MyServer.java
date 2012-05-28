@@ -39,6 +39,8 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -526,12 +528,8 @@ public class MyServer {
 		byte[] data = getData(signedData);
 		byte[] signedAttributes = signerInfo.getAuthenticatedAttributes().getEncoded();
 		
-		ASN1ObjectIdentifier sha1Branch = new ASN1ObjectIdentifier("1.3.14.3.2");
-		if (!signerInfo.getDigestAlgorithm().getAlgorithm().on(sha1Branch)) {
-			throw new IllegalStateException("Unsupported hashing algorithm used");
-		}
-		
-		String algorithm = OIWObjectIdentifiers.sha1WithRSA.getId();
+//		String signatureAlgorithm = OIWObjectIdentifiers.sha1WithRSA.getId();
+		String signatureAlgorithm = signerInfo.getDigestEncryptionAlgorithm().getAlgorithm().getId();
 		
 //		AlgorithmIdentifier id = signerInfo.getDigestAlgorithm();
 //		AlgorithmIdentifier id2 = signerInfo.getDigestEncryptionAlgorithm();
@@ -565,7 +563,7 @@ public class MyServer {
 		byte[] signedAttributesDigest = computeDigest(signerInfo, signedAttributes);
 		
 		// initialize signature
-		Signature signature = Signature.getInstance(algorithm);
+		Signature signature = Signature.getInstance(OIWObjectIdentifiers.sha1WithRSA.getId(), "BC");
 		signature.initVerify(certificate.getPublicKey());
 		
 		// add data
@@ -576,11 +574,48 @@ public class MyServer {
 		boolean verified = signature.verify(verifyDigest);
 		
 		// TODO try two ways of signature checking
-		byte[] test = computeDigest(signerInfo, data, signedAttributesDigest);
-		signature.update(test);
+		byte[] fullDigest = computeDigest(signerInfo, data, signedAttributesDigest);
+		signature.update(fullDigest);
 		boolean verified2 = signature.verify(verifyDigest);
 		
-		if (verified || verified2) {
+		fullDigest = computeDigest(signerInfo, data, signedAttributes);
+		signature.update(fullDigest);
+		boolean verified3 = signature.verify(verifyDigest);
+		
+		signature.update(data);
+		signature.update(signedAttributes);
+		boolean verified4 = signature.verify(verifyDigest);
+		
+		// 
+		// Fix for "Illegal key size or default parameters"
+		// @see http://stackoverflow.com/questions/6481627/java-security-illegal-key-size-or-default-parameters
+		// 
+		Cipher cipher = Cipher.getInstance(signatureAlgorithm, "BC");
+		cipher.init(Cipher.ENCRYPT_MODE, certificate.getPublicKey());
+		cipher.update(fullDigest);
+		byte[] encryptedFullDigest = cipher.doFinal();
+		System.out.println(encryptedFullDigest.length);
+		
+		boolean verified5 = Arrays.equals(verifyDigest, encryptedFullDigest);
+		
+		// XXX
+		System.out.println(signerInfo.getEncryptedDigest().getEncoded().length);
+		System.out.println(signerInfo.getEncryptedDigest().getOctets().length);
+		
+		char[] encode = Hex.encodeHex(signerInfo.getEncryptedDigest().getOctets());
+		String hexVerifyDigest = new String(encode);
+		System.out.println(hexVerifyDigest);
+		System.out.println(hexVerifyDigest.length());
+		// XXX
+		
+		cipher = Cipher.getInstance(signatureAlgorithm, "BC");
+		cipher.init(Cipher.DECRYPT_MODE, certificate.getPublicKey());
+		cipher.update(verifyDigest);
+		byte[] decryptedVerifyDigest = cipher.doFinal();
+		
+		boolean verified6 = Arrays.equals(decryptedVerifyDigest, fullDigest);
+		
+		if (verified || verified2 || verified3 || verified4 || verified5 || verified6) {
 			System.out.println("YEAAAAAAAAHHHHHHHHHHHHHH!!!");
 		}
 		
