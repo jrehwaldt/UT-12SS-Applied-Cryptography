@@ -49,6 +49,7 @@ import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
+import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -573,8 +574,6 @@ public class MyServer {
 		return verified; // FIXMEdone
 	}
 	
-	
-
 	private static byte[] computeDigest(SignerInfo signerInfo, byte[]... data) throws NoSuchAlgorithmException {
 		
 		MessageDigest digest = MessageDigest.getInstance(
@@ -585,9 +584,6 @@ public class MyServer {
 		}
 		return digest.digest();
 	}
-	
-	private static final ASN1ObjectIdentifier OID_MESSAGE_DIGEST = new ASN1ObjectIdentifier("1.2.840.113549.1.9.4");
-	private static final ASN1ObjectIdentifier OID_CONTENT_TYPE = new ASN1ObjectIdentifier("1.2.840.113549.1.9.3");
 	
 	private static byte[] getMessageDigest(SignerInfo signerInfo) {
 		
@@ -602,7 +598,7 @@ public class MyServer {
 			
 			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
 			
-			if (!OID_MESSAGE_DIGEST.equals(oid)) {
+			if (!PKCSObjectIdentifiers.pkcs_9_at_messageDigest.equals(oid)) {
 				continue;
 			}
 			
@@ -628,7 +624,7 @@ public class MyServer {
 			
 			ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) sequence.getObjectAt(0);
 			
-			if (!OID_CONTENT_TYPE.equals(oid)) {
+			if (!PKCSObjectIdentifiers.pkcs_9_at_contentType.equals(oid)) {
 				continue;
 			}
 			
