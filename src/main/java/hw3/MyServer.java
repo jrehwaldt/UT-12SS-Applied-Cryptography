@@ -32,6 +32,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 
 import javax.crypto.Cipher;
@@ -39,9 +40,9 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -54,7 +55,18 @@ import org.bouncycastle.asn1.cms.SignedData;
 import org.bouncycastle.asn1.cms.SignerInfo;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x509.Certificate;
+import org.bouncycastle.asn1.x509.DigestInfo;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerInformation;
+import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.SignerInformationVerifier;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentVerifier;
+import org.bouncycastle.operator.DigestCalculator;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.RawContentVerifier;
 import org.bouncycastle.util.encoders.Base64;
 
 import common.Util;
@@ -375,10 +387,15 @@ public class MyServer {
 		 */
 		ASN1InputStream in = new ASN1InputStream(contentInfoBytes);
 		ASN1Encodable asn = in.readObject();
+		
 		ContentInfo contentInfo = ContentInfo.getInstance(asn);
 		ASN1Encodable content = contentInfo.getContent();
 		
 		SignedData signedData = SignedData.getInstance(content);
+		
+		// TODO remove
+		verifyByBCMeans(signedData, contentInfoBytes);
+		
 		return signedData; // FIXMEdone
 	}
 
@@ -608,14 +625,94 @@ public class MyServer {
 		System.out.println(hexVerifyDigest.length());
 		// XXX
 		
+		// YYY
+		boolean verified7 = false;
+//		try {
+//			verified7 = true;
+//			InputStream is = new ByteArrayInputStream(data);
+//			DigestCalculatorProvider digestProvider = new JcaDigestCalculatorProviderBuilder().build();
+//			CMSSignedDataParser parser = new CMSSignedDataParser(digestProvider, signedData.getEncoded());
+//			CMSTypedStream signedContent = parser.getSignedContent();
+//			signedContent.drain();
+//			
+//			Store certStore = parser.getCertificates();
+//			SignerInformationStore signers = parser.getSignerInfos();
+//			
+//			Collection c = signers.getSigners(); 
+//			Iterator it = c.iterator();
+//			while(it.hasNext()) {
+//				SignerInformation signer = (SignerInformation)it.next();  
+//				Collection certCollection = certStore.getMatches(signer.getSID());
+//				
+//				Iterator certIt = certCollection.iterator();
+//				X509CertificateHolder certHolder = (X509CertificateHolder)certIt.next();
+//				
+//				SignerInformationVerifier verifier = new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(certHolder);
+//				if (!signer.verify(verifier)) {
+//					verified7 = false;
+//				} else {
+//					System.out.println("verify success" );
+//				}
+//			}
+//			
+//		} catch (CMSException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (OperatorCreationException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		try {
+//			JcaSimpleSignerInfoVerifierBuilder signerInfoVerifierBuilder = new JcaSimpleSignerInfoVerifierBuilder();
+//			signerInfoVerifierBuilder.setProvider("BC");
+//			SignerInformationVerifier signerInformationVerifier = signerInfoVerifierBuilder.build(certificate);
+//			ContentVerifier contentVerifier = signerInformationVerifier.getContentVerifier(signerInfo.getDigestEncryptionAlgorithm(), signerInfo.getDigestAlgorithm());
+////			verified7 = contentVerifier.verify(verifyDigest);
+//			
+//			
+//			DigestCalculator calc = signerInformationVerifier.getDigestCalculator(signerInfo.getDigestAlgorithm());
+//			OutputStream digOut = calc.getOutputStream();
+//			digOut.write(data);
+//			digOut.close();
+//			
+//			byte[] resultDigest = calc.getDigest();
+//			
+//			if (contentVerifier instanceof RawContentVerifier) {
+//				RawContentVerifier rawVerifier = (RawContentVerifier) contentVerifier;
+//
+////				String encName = CMSSignedHelper.INSTANCE.getEncryptionAlgName(signerInfo.getDigestEncryptionAlgorithm());
+////				if (encName.equals("RSA")) {
+//					DigestInfo digInfo = new DigestInfo(signerInfo.getDigestAlgorithm(), resultDigest);
+//					
+//					verified7 = rawVerifier.verify(digInfo.getEncoded(ASN1Encoding.DER), resultDigest);
+////				}
+//				verified7 = rawVerifier.verify(verifyDataDigest, resultDigest);
+//				
+//				CMSSignedData xxx = new CMSSignedData(signedData.getEncoded());
+//				SignerInformationStore store = xxx.getSignerInfos();
+////				new CMSProcessableByteArray(null, signer.getSignature())
+//				Collection signers = store.getSigners();
+//				System.out.println(signers.size());
+//			}
+//			
+//		} catch (OperatorCreationException e) {
+//			e.printStackTrace();
+//		} catch (CMSException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		// YYY
+		
+		
 		cipher = Cipher.getInstance(signatureAlgorithm, "BC");
 		cipher.init(Cipher.DECRYPT_MODE, certificate.getPublicKey());
-		cipher.update(verifyDigest);
-		byte[] decryptedVerifyDigest = cipher.doFinal();
+//		cipher.update(verifyDigest);
+//		byte[] decryptedVerifyDigest = cipher.doFinal();
+//		
+//		boolean verified6 = Arrays.equals(decryptedVerifyDigest, fullDigest);
+		boolean verified6 = false;
 		
-		boolean verified6 = Arrays.equals(decryptedVerifyDigest, fullDigest);
-		
-		if (verified || verified2 || verified3 || verified4 || verified5 || verified6) {
+		if (verified || verified2 || verified3 || verified4 || verified5 || verified6 || verified7) {
 			System.out.println("YEAAAAAAAAHHHHHHHHHHHHHH!!!");
 		}
 		
@@ -686,5 +783,31 @@ public class MyServer {
 		}
 		
 		throw null;
+	}
+	
+	private static void verifyByBCMeans(SignedData signedData,
+			byte[] contentInfoBytes)
+	throws IOException {
+		// TODO remove whole method
+		try {
+			CMSSignedData xxx = new CMSSignedData(contentInfoBytes);
+			SignerInformationStore store = xxx.getSignerInfos();
+			SignerInformation info = (SignerInformation) store.getSigners().iterator().next();
+			
+			JcaSimpleSignerInfoVerifierBuilder signerInfoVerifierBuilder = new JcaSimpleSignerInfoVerifierBuilder();
+			signerInfoVerifierBuilder.setProvider("BC");
+			SignerInformationVerifier verifier = signerInfoVerifierBuilder.build(getCertificate(signedData).getPublicKey());
+			
+			System.out.println(info.verify(verifier));
+		} catch (CMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (OperatorCreationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (CertificateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
