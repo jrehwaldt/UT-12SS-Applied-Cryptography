@@ -92,7 +92,7 @@ public class MyEstEidSigner implements ContentSigner {
 		 * https://bitbucket.org/hudolejev/applied-cryptography-2012-course/src/tip/lab19/EstEidCryptoDemo.java
 		 */
 		
-		// TODO: implement
+		// TODOdone: implement
 		//   - Compute message imprint from the data written 'out' stream
 		//   - Sign message imprint using EstEID card
 		//

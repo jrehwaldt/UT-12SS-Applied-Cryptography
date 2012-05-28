@@ -521,10 +521,6 @@ public class MyServer {
 			throw new IllegalStateException("We expect exactly one SignerInfo for this task");
 		}
 		
-		SignerInfo signerInfo = SignerInfo.getInstance(signerInfos.getObjectAt(0));
-		byte[] verifyDigest = signerInfo.getEncryptedDigest().getOctets();
-		byte[] data = getData(signedData);
-		
 //		AlgorithmIdentifier id = signerInfo.getDigestAlgorithm();
 //		AlgorithmIdentifier id2 = signerInfo.getDigestEncryptionAlgorithm();
 //		ASN1Set digestAlgorithms = signedData.getDigestAlgorithms();
@@ -533,12 +529,15 @@ public class MyServer {
 		// digestAlgorithms: [1.3.14.3.2.26]
 		// required:         1.3.14.3.2.29
 		
+		SignerInfo signerInfo = SignerInfo.getInstance(signerInfos.getObjectAt(0));
+		byte[] data = getData(signedData);
+		
 		// verify data-only message digest, if signed attributes available
-		byte[] verifyDataDigest = getMessageDigest(signerInfo);
-		if (verifyDataDigest != null) {
+		byte[] digest = getMessageDigest(signerInfo);
+		if (digest != null) {
 			byte[] dataDigest = computeDigest(signerInfo, data);
 			
-			if (!Arrays.equals(dataDigest, verifyDataDigest)) {
+			if (!Arrays.equals(dataDigest, digest)) {
 				return false;
 			}
 		}
@@ -553,13 +552,21 @@ public class MyServer {
 			}
 		}
 		
-		MessageImprint imprint = MessageImprint.getInstance(verifyDigest);
+		// verification of counter signatures (section 11.4)
+		// goes here, but we skip this part for this task
+		// as there are no test data provided
+		// ...
 		
-		Signature signature = Signature.getInstance(imprint.getHashAlgorithm().getAlgorithm().getId(), "BC");
+		// verify signature
+		byte[] imprintData = signerInfo.getEncryptedDigest().getOctets();
+		MessageImprint imprint = MessageImprint.getInstance(imprintData);
+		
+		Signature signature = Signature.getInstance(
+				imprint.getHashAlgorithm().getAlgorithm().getId());
 		signature.initVerify(certificate.getPublicKey());
 		
 		// add data
-		signature.update(verifyDataDigest);
+		signature.update(digest);
 		
 		// verify
 		boolean verified = signature.verify(imprint.getHashedMessage());
