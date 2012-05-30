@@ -6,13 +6,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +31,6 @@ import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Enumeration;
 
@@ -53,7 +53,7 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.Certificate;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.openssl.PEMReader;
 
 import common.Util;
 
@@ -224,27 +224,12 @@ public class MyServer {
 		X509Certificate certificate = (X509Certificate) factory.generateCertificate(in);
 		in.close();
 		
-		// TODO: Read private key from file set in 'my.server.key' property (1p)
+		// TODOdone: Read private key from file set in 'my.server.key' property (1p)
+		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("my.server.key"))); 
+		KeyPair keyPair = (KeyPair) new PEMReader(br).readObject();
+		PrivateKey privateKey = keyPair.getPrivate();
 		
-//		BufferedReader br = new BufferedReader(new FileReader(System.getProperty("my.server.key"))); 
-//		KeyPair keyPair = (KeyPair) new PEMReader(br).readObject();
-//		PrivateKey privateKey = keyPair.getPrivate();
-//		BCRSAPrivateCrtKey bcPrivateKey = (BCRSAPrivateCrtKey) privateKey;
-		
-		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
-//		encodedKey = Arrays.copyOfRange(encodedKey, 28, encodedKey.length - 27);
-		encodedKey = Arrays.copyOfRange(encodedKey, 32, encodedKey.length - 31);
-		byte[] encoded = Base64.decode(encodedKey);
-		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-		
-//		KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-//		byte[] encodedKey = Util.readFile(System.getProperty("my.server.key"));
-//		PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encodedKey);
-//		PrivateKey privateKey = keyFactory.generatePrivate(keySpec);
-		
-		// TODO: Create a new Java keystore
+		// TODOdone: Create a new Java keystore
 		//   - import server certificate
 		//   - import private key
 		//   - save to file set in 'javax.ssl.net.keyStore' property
@@ -282,23 +267,11 @@ public class MyServer {
 		// import server certificate and private key
 		store.setCertificateEntry(alias, certificate);
 		
-//		System.out.println(bcPrivateKey.getFormat());
-//		System.out.println(new javax.crypto.EncryptedPrivateKeyInfo(privateKey.getEncoded()).getAlgName());
-//		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
-////				AlgorithmIdentifier.getInstance("1.2.840.113549.1.8"),
-////				AlgorithmIdentifier.getInstance("RSA"),
-//				AlgorithmIdentifier.getInstance(NISTObjectIdentifiers.dsa_with_sha224),
-//				privateKey.getEncoded());
-//		System.out.println(encryptedInfo.getEncryptionAlgorithm().getAlgorithm().getId());
-		
-		// TODO comment in again
-//		EncryptedPrivateKeyInfo encryptedInfo = new EncryptedPrivateKeyInfo(
-//				privateKey.getEncoded());
-//		store.setKeyEntry(
-//				alias,
-//				encryptedInfo.getEncoded(),
-////				privateKey.getEncoded(),
-//				new X509Certificate[] { certificate });
+		store.setKeyEntry(
+				alias,
+				privateKey,
+				System.getProperty("javax.net.ssl.keyStorePassword").toCharArray(),
+				new X509Certificate[] { certificate });
 		
 		// store keystore
 		FileOutputStream out = new FileOutputStream(System.getProperty("javax.net.ssl.keyStore"));
