@@ -1,7 +1,2 @@
 
-*.jks
-*.pk8
-*.der
-*.pem
 *.pw
-*.cer
