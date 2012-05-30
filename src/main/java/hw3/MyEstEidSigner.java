@@ -3,17 +3,8 @@ package hw3;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.security.cert.X509Certificate;
-import java.util.Enumeration;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.DLSequence;
-import org.bouncycastle.asn1.DLSet;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.tsp.MessageImprint;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.operator.ContentSigner;
@@ -115,42 +106,13 @@ public class MyEstEidSigner implements ContentSigner {
 			EstEidHandler eid = new EstEidHandler(SmartCardUtil.connectCard().getBasicChannel());
 			eid.loadProperties();
 			
-			ASN1InputStream in = new ASN1InputStream(out.toByteArray());
-			ASN1Primitive asn1 = in.readObject();
-			DLSet asn1Set = (DLSet) asn1;
+			byte[] unsigned = out.toByteArray();
 			
-			@SuppressWarnings("unchecked")
-			Enumeration<DLSequence> en = asn1Set.getObjects();
-			while (en.hasMoreElements()) {
-				DLSequence sequence = en.nextElement();
-				
-				if (sequence.size() < 2) {
-					throw new IllegalStateException("Unexpected size of DLSequence");
-				}
-				
-				ASN1Encodable asn1Oid = sequence.getObjectAt(0);
-				ASN1Encodable asn1Data = sequence.getObjectAt(1);
-				
-				if (!(asn1Oid instanceof ASN1ObjectIdentifier)) {
-					throw new IllegalStateException("OID expected in DLSequence");
-				}
-				
-				ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) asn1Oid;
-				if (!PKCSObjectIdentifiers.pkcs_9_at_messageDigest.equals(oid)) {
-					continue;
-				}
-				
-				DLSet asn1DataSet = (DLSet) asn1Data;
-				DEROctetString der = (DEROctetString) asn1DataSet.getObjectAt(0);
-				
-				MessageImprint imprint = new MessageImprint(
-						getAlgorithmIdentifier(),
-						eid.signData(der.getOctets()));
-				
-				return imprint.getEncoded(); // FIXMEdone
-			}
+			MessageImprint imprint = new MessageImprint(
+					getAlgorithmIdentifier(),
+					eid.signData(unsigned));
 			
-			return null;
+			return imprint.getEncoded(); // FIXMEdone
 		} catch (Exception e) {
 			throw new IllegalStateException(e);
 		}

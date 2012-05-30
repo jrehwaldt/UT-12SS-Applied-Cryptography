@@ -567,7 +567,8 @@ public class MyServer {
 		signature.initVerify(certificate.getPublicKey());
 		
 		// add data
-		signature.update(digest);
+		byte[] signedAttributes = signerInfo.getAuthenticatedAttributes().getEncoded();
+		signature.update(signedAttributes);
 		
 		// verify
 		boolean verified = signature.verify(imprint.getHashedMessage());
